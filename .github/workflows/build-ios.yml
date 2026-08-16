@@ -102,6 +102,7 @@ jobs:
             -DCLANG_TABLEGEN=$(pwd)/../host/bin/clang-tblgen \
             -DMLIR_TABLEGEN_EXE=$(pwd)/../host/bin/mlir-tblgen \
             -DLLDB_TABLEGEN_EXE=$(pwd)/../host/bin/lldb-tblgen \
+            -DLLVM_ENABLE_LINKER_GC_SECTIONS=OFF \
             -DCMAKE_EXE_LINKER_FLAGS="-Wl,-dead_strip"
           ninja -j 2
 
