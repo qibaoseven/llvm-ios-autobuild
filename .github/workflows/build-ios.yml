@@ -1,0 +1,124 @@
+name: Build LLVM XCFramework (Full iOS)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-xcframework:
+    runs-on: macos-latest
+    env:
+      LLVM_VERSION: "22.1.8"
+
+    steps:
+      - name: Show runner hardware info
+        run: |
+          echo "=== CPU Info ==="
+          echo "Physical cores: $(sysctl -n hw.physicalcpu)"
+          echo "Logical cores: $(sysctl -n hw.logicalcpu)"
+          echo "CPU brand: $(sysctl -n machdep.cpu.brand_string 2>/dev/null || echo 'Apple Silicon')"
+          echo ""
+          echo "=== Memory Info ==="
+          echo "Total RAM: $(sysctl -n hw.memsize | awk '{print $0/1024/1024/1024 " GB"}')"
+          echo ""
+          echo "=== Disk Info ==="
+          echo "Available disk space: $(df -h / | awk 'NR==2 {print $4}')"
+          echo "Total disk size: $(df -h / | awk 'NR==2 {print $2}')"
+          echo ""
+          echo "=== OS Info ==="
+          echo "macOS version: $(sw_vers -productVersion)"
+          echo "Xcode version: $(xcodebuild -version | head -1)"
+          echo ""
+          echo "=== Architecture ==="
+          echo "Arch: $(uname -m)"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get CMake 3.31.12
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 3.31.12
+
+      - name: Install dependencies
+        run: brew install ninja
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Clone LLVM source code
+        run: |
+          git clone --depth 1 --branch release/22.x \
+            https://github.com/llvm/llvm-project.git
+
+      - name: Build host tools for macOS
+        run: |
+          mkdir -p build/host
+          cd build/host
+          cmake -G Ninja ${{ github.workspace }}/llvm-project/llvm \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DLLVM_TARGETS_TO_BUILD="AArch64;ARM;X86" \
+            -DLLVM_ENABLE_PROJECTS="clang;mlir;lldb;lld" \
+            -DLLVM_INCLUDE_TESTS=OFF \
+            -DLLVM_INCLUDE_EXAMPLES=OFF
+          ninja -j $(sysctl -n hw.logicalcpu) llvm-tblgen clang-tblgen mlir-tblgen lldb-tblgen
+
+      - name: Build for iOS (arm64)
+        run: |
+          export SDKROOT=$(xcrun --sdk iphoneos --show-sdk-path)
+          mkdir -p build/ios-arm64
+          cd build/ios-arm64
+          cmake -G Ninja ${{ github.workspace }}/llvm-project/llvm \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=$SDKROOT \
+            -DCMAKE_OSX_ARCHITECTURES="arm64" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER="clang" \
+            -DCMAKE_CXX_COMPILER="clang++" \
+            -DCMAKE_INSTALL_PREFIX=$(pwd)/install_dummy \
+            -DCMAKE_SKIP_INSTALL_ALL_DEPENDENCY=ON \
+            -DCMAKE_C_FLAGS="-O3 -mcpu=apple-a13 -flto" \
+            -DCMAKE_CXX_FLAGS="-O3 -mcpu=apple-a13 -flto" \
+            -DCMAKE_BUNDLE_DESTINATION="bin" \
+            -DCMAKE_SKIP_INSTALL_ALL_DEPENDENCY=ON \
+            -DCMAKE_POLICY_DEFAULT_CMP0006=OLD \
+            -DCMAKE_MACOSX_BUNDLE=OFF \
+            -DLLVM_BUILD_RUNTIME=On \
+            -DLLVM_INCLUDE_TESTS=Off \
+            -DLLVM_INCLUDE_EXAMPLES=Off \
+            -DLLVM_ENABLE_BACKTRACES=Off \
+            -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld;flang" \
+            -DLLVM_ENABLE_RUNTIMES="libc;libcxx;libcxxabi" \
+            -DLLVM_TARGETS_TO_BUILD="AArch64;ARM;X86" \
+            -DLLVM_INSTALL_UTILS=Off \
+            -DLLVM_INSTALL_TOOLCHAIN_ONLY=Off \
+            -DLLVM_ENABLE_INSTALL=Off \
+            -DLLVM_TABLEGEN=$(pwd)/../host/bin/llvm-tblgen \
+            -DCLANG_TABLEGEN=$(pwd)/../host/bin/clang-tblgen \
+            -DMLIR_TABLEGEN_EXE=$(pwd)/../host/bin/mlir-tblgen \
+            -DLLDB_TABLEGEN_EXE=$(pwd)/../host/bin/lldb-tblgen \
+            -DLLVM_USE_LINKER=lld
+          ninja -j 2
+
+      - name: Merge all static libraries into one (libLLVM.a)
+        run: |
+          mkdir -p xcframework/ios-arm64
+          find build/ios-arm64/lib -name "*.a" -type f > libs.txt
+          libtool -static -o xcframework/ios-arm64/libLLVM.a @libs.txt
+
+      - name: Create XCFramework
+        run: |
+          xcodebuild -create-xcframework \
+            -library xcframework/ios-arm64/libLLVM.a \
+            -output LLVM.xcframework
+
+      - name: Upload XCFramework artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LLVM.xcframework
+          path: LLVM.xcframework
