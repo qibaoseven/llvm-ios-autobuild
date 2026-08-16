@@ -102,7 +102,7 @@ jobs:
             -DCLANG_TABLEGEN=$(pwd)/../host/bin/clang-tblgen \
             -DMLIR_TABLEGEN_EXE=$(pwd)/../host/bin/mlir-tblgen \
             -DLLDB_TABLEGEN_EXE=$(pwd)/../host/bin/lldb-tblgen \
-            -DLLVM_USE_LINKER=/opt/homebrew/Cellar/lld/22.1.8/bin/lld
+            -DCMAKE_EXE_LINKER_FLAGS="-Wl,-dead_strip"
           ninja -j 2
 
       - name: Merge all static libraries into one (libLLVM.a)
