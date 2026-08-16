@@ -44,7 +44,9 @@ jobs:
           cmakeVersion: 3.31.12
 
       - name: Install dependencies
-        run: brew install ninja lld
+        run: |
+          brew install ninja lld
+          which lld
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -79,6 +81,7 @@ jobs:
       - name: Build for iOS (arm64)
         run: |
           export SDKROOT=$(xcrun --sdk iphoneos --show-sdk-path)
+          export LLD_PATH=$(brew --prefix lld)/bin/lld
           mkdir -p build/ios-arm64
           cd build/ios-arm64
           cmake -G Ninja ${{ github.workspace }}/llvm-project/llvm \
@@ -109,7 +112,7 @@ jobs:
             -DCLANG_TABLEGEN=$(pwd)/../host/bin/clang-tblgen \
             -DMLIR_TABLEGEN_EXE=$(pwd)/../host/bin/mlir-tblgen \
             -DLLDB_TABLEGEN_EXE=$(pwd)/../host/bin/lldb-tblgen \
-            -DLLVM_USE_LINKER=/opt/homebrew/Cellar/lld/22.1.8/bin/lld
+            -DLLVM_USE_LINKER=$LLD_PATH
           ninja -j 2
 
       - name: Merge all static libraries into one (libLLVM.a)
