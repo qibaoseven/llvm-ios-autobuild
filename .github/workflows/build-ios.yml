@@ -44,7 +44,7 @@ jobs:
           cmakeVersion: 3.31.12
 
       - name: Install dependencies
-        run: brew install ninja
+        run: brew install ninja lld
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
