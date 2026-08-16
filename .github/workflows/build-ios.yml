@@ -56,6 +56,14 @@ jobs:
           git clone --depth 1 --branch release/22.x \
             https://github.com/llvm/llvm-project.git
 
+      - name: Completely remove --gc-sections from LLVM CMake files
+        run: |
+          cd llvm-project/llvm/cmake/modules
+          sed -i '' 's/-Wl,--gc-sections//g' AddLLVM.cmake
+          sed -i '' 's/-Wl,--gc-sections//g' HandleLLVMOptions.cmake
+          sed -i '' '/--gc-sections/d' AddLLVM.cmake
+          sed -i '' '/--gc-sections/d' HandleLLVMOptions.cmake
+
       - name: Build host tools for macOS
         run: |
           mkdir -p build/host
@@ -85,7 +93,6 @@ jobs:
             -DCMAKE_C_FLAGS="-O3 -mcpu=apple-a13 -flto" \
             -DCMAKE_CXX_FLAGS="-O3 -mcpu=apple-a13 -flto" \
             -DCMAKE_BUNDLE_DESTINATION="bin" \
-            -DCMAKE_SKIP_INSTALL_ALL_DEPENDENCY=ON \
             -DCMAKE_POLICY_DEFAULT_CMP0006=OLD \
             -DCMAKE_MACOSX_BUNDLE=OFF \
             -DLLVM_BUILD_RUNTIME=On \
@@ -102,8 +109,7 @@ jobs:
             -DCLANG_TABLEGEN=$(pwd)/../host/bin/clang-tblgen \
             -DMLIR_TABLEGEN_EXE=$(pwd)/../host/bin/mlir-tblgen \
             -DLLDB_TABLEGEN_EXE=$(pwd)/../host/bin/lldb-tblgen \
-            -DLLVM_ENABLE_LINKER_GC_SECTIONS=OFF \
-            -DCMAKE_EXE_LINKER_FLAGS="-Wl,-dead_strip"
+            -DLLVM_USE_LINKER=/opt/homebrew/Cellar/lld/22.1.8/bin/lld
           ninja -j 2
 
       - name: Merge all static libraries into one (libLLVM.a)
