@@ -1,0 +1,6 @@
+[submodule "llvm-project"]
+    path = llvm-project
+    url = https://github.com/llvm/llvm-project.git
+    branch = release/22.x
+    update = none
+    shallow = true
