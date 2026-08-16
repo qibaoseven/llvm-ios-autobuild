@@ -82,7 +82,7 @@ jobs:
       - name: Build for iOS (arm64)
         run: |
           export SDKROOT=$(xcrun --sdk iphoneos --show-sdk-path)
-          export LLD_PATH=$(brew --prefix lld)/bin/lld
+          # export LLD_PATH=$(brew --prefix lld)/bin/lld
           mkdir -p build/ios-arm64
           cd build/ios-arm64
           cmake -G Ninja ${{ github.workspace }}/llvm-project/llvm \
@@ -112,8 +112,7 @@ jobs:
             -DLLVM_TABLEGEN=$(pwd)/../host/bin/llvm-tblgen \
             -DCLANG_TABLEGEN=$(pwd)/../host/bin/clang-tblgen \
             -DMLIR_TABLEGEN_EXE=$(pwd)/../host/bin/mlir-tblgen \
-            -DLLDB_TABLEGEN_EXE=$(pwd)/../host/bin/lldb-tblgen \
-            -DLLVM_USE_LINKER=$LLD_PATH
+            -DLLDB_TABLEGEN_EXE=$(pwd)/../host/bin/lldb-tblgen
           ninja -j 2
 
       - name: Merge all static libraries into one (libLLVM.a)
