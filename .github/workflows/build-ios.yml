@@ -85,6 +85,7 @@ jobs:
           # export LLD_PATH=$(brew --prefix lld)/bin/lld
           mkdir -p build/ios-arm64
           cd build/ios-arm64
+          brew unlink zstd
           cmake -G Ninja ${{ github.workspace }}/llvm-project/llvm \
             -DCMAKE_SYSTEM_NAME=iOS \
             -DCMAKE_OSX_SYSROOT=$SDKROOT \
@@ -99,6 +100,7 @@ jobs:
             -DCMAKE_BUNDLE_DESTINATION="bin" \
             -DCMAKE_POLICY_DEFAULT_CMP0006=OLD \
             -DCMAKE_MACOSX_BUNDLE=OFF \
+            -DCMAKE_DISABLE_FIND_PACKAGE_zstd=ON \
             -DLLVM_ENABLE_ZSTD=OFF \
             -DLLVM_BUILD_RUNTIME=On \
             -DLLVM_INCLUDE_TESTS=Off \
@@ -115,7 +117,8 @@ jobs:
             -DMLIR_TABLEGEN_EXE=$(pwd)/../host/bin/mlir-tblgen \
             -DLLDB_TABLEGEN_EXE=$(pwd)/../host/bin/lldb-tblgen
           ninja -j 3
-
+          brew link zstd
+      
       - name: Merge all static libraries into one (libLLVM.a)
         run: |
           mkdir -p xcframework/ios-arm64
