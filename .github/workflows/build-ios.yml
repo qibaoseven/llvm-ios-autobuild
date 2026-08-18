@@ -99,6 +99,7 @@ jobs:
             -DCMAKE_BUNDLE_DESTINATION="bin" \
             -DCMAKE_POLICY_DEFAULT_CMP0006=OLD \
             -DCMAKE_MACOSX_BUNDLE=OFF \
+            -DLLVM_ENABLE_ZSTD=OFF \
             -DLLVM_BUILD_RUNTIME=On \
             -DLLVM_INCLUDE_TESTS=Off \
             -DLLVM_INCLUDE_EXAMPLES=Off \
@@ -113,7 +114,7 @@ jobs:
             -DCLANG_TABLEGEN=$(pwd)/../host/bin/clang-tblgen \
             -DMLIR_TABLEGEN_EXE=$(pwd)/../host/bin/mlir-tblgen \
             -DLLDB_TABLEGEN_EXE=$(pwd)/../host/bin/lldb-tblgen
-          ninja -j 2
+          ninja -j 3
 
       - name: Merge all static libraries into one (libLLVM.a)
         run: |
