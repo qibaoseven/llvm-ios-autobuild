@@ -95,8 +95,8 @@ jobs:
             -DCMAKE_CXX_COMPILER="clang++" \
             -DCMAKE_INSTALL_PREFIX=$(pwd)/install_dummy \
             -DCMAKE_SKIP_INSTALL_ALL_DEPENDENCY=ON \
-            -DCMAKE_C_FLAGS="-O3 -mcpu=apple-a13 -flto" \
-            -DCMAKE_CXX_FLAGS="-O3 -mcpu=apple-a13 -flto" \
+            -DCMAKE_C_FLAGS="-O3 -mcpu=apple-a13" \
+            -DCMAKE_CXX_FLAGS="-O3 -mcpu=apple-a13" \
             -DCMAKE_BUNDLE_DESTINATION="bin" \
             -DCMAKE_POLICY_DEFAULT_CMP0006=OLD \
             -DCMAKE_MACOSX_BUNDLE=OFF \
@@ -116,7 +116,7 @@ jobs:
             -DCLANG_TABLEGEN=$(pwd)/../host/bin/clang-tblgen \
             -DMLIR_TABLEGEN_EXE=$(pwd)/../host/bin/mlir-tblgen \
             -DLLDB_TABLEGEN_EXE=$(pwd)/../host/bin/lldb-tblgen
-          ninja -j 2
+          ninja -j 3
           brew link zstd
       
       - name: Merge all static libraries into one (libLLVM.a)
