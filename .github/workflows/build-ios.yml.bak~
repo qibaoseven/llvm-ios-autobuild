@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-xcframework:
-    runs-on: macos-26-intel
+    runs-on: macos-26
     env:
       LLVM_VERSION: "22.1.8"
 
@@ -116,7 +116,7 @@ jobs:
             -DCLANG_TABLEGEN=$(pwd)/../host/bin/clang-tblgen \
             -DMLIR_TABLEGEN_EXE=$(pwd)/../host/bin/mlir-tblgen \
             -DLLDB_TABLEGEN_EXE=$(pwd)/../host/bin/lldb-tblgen
-          ninja -j 4
+          ninja -j 3
           brew link zstd
       
       - name: Merge all static libraries into one (libLLVM.a)
