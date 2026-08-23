@@ -87,10 +87,10 @@ jobs:
             -DLLVM_INSTALL_UTILS=Off \
             -DLLVM_INSTALL_TOOLCHAIN_ONLY=Off \
             -DLLVM_ENABLE_INSTALL=Off \
-            -DLLVM_TABLEGEN=$(pwd)/../host/bin/llvm-tblgen \
-            -DCLANG_TABLEGEN=$(pwd)/../host/bin/clang-tblgen \
-            -DMLIR_TABLEGEN_EXE=$(pwd)/../host/bin/mlir-tblgen \
-            -DLLDB_TABLEGEN_EXE=$(pwd)/../host/bin/lldb-tblgen
+            -DLLVM_TABLEGEN=$(pwd)/../host/llvm-tblgen \
+            -DCLANG_TABLEGEN=$(pwd)/../host/clang-tblgen \
+            -DMLIR_TABLEGEN_EXE=$(pwd)/../host/mlir-tblgen \
+            -DLLDB_TABLEGEN_EXE=$(pwd)/../host/lldb-tblgen
 
       - name: Build LLVM libraries
         run: |
