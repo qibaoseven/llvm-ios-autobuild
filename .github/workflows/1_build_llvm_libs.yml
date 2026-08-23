@@ -61,6 +61,7 @@ jobs:
           mkdir -p build/ios-arm64
           cd build/ios-arm64
           brew unlink zstd
+          ls -AlR $(pwd)/../../
           cmake -G Ninja ${{ github.workspace }}/llvm-project/llvm \
             -DCMAKE_SYSTEM_NAME=iOS \
             -DCMAKE_OSX_SYSROOT=$SDKROOT \
@@ -87,10 +88,10 @@ jobs:
             -DLLVM_INSTALL_UTILS=Off \
             -DLLVM_INSTALL_TOOLCHAIN_ONLY=Off \
             -DLLVM_ENABLE_INSTALL=Off \
-            -DLLVM_TABLEGEN=$(pwd)/../host/llvm-tblgen \
-            -DCLANG_TABLEGEN=$(pwd)/../host/clang-tblgen \
-            -DMLIR_TABLEGEN_EXE=$(pwd)/../host/mlir-tblgen \
-            -DLLDB_TABLEGEN_EXE=$(pwd)/../host/lldb-tblgen
+            -DLLVM_TABLEGEN=$(pwd)/../../host/llvm-tblgen \
+            -DCLANG_TABLEGEN=$(pwd)/../../host/clang-tblgen \
+            -DMLIR_TABLEGEN_EXE=$(pwd)/../../host/mlir-tblgen \
+            -DLLDB_TABLEGEN_EXE=$(pwd)/../../host/lldb-tblgen
 
       - name: Build LLVM libraries
         run: |
