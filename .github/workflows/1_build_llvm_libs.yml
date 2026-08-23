@@ -1,0 +1,116 @@
+name: Build LLVM Libraries (iOS arm64)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-llvm-libraries:
+    runs-on: macos-26
+    permissions:
+      contents: write
+    env:
+      LLVM_VERSION: "22.1.8"
+
+    steps:
+      - name: Show runner hardware info
+        run: |
+          echo "=== CPU Info ==="
+          echo "Physical cores: $(sysctl -n hw.physicalcpu)"
+          echo "Logical cores: $(sysctl -n hw.logicalcpu)"
+          echo "CPU brand: $(sysctl -n machdep.cpu.brand_string 2>/dev/null || echo 'Apple Silicon')"
+          echo ""
+          echo "=== Memory Info ==="
+          echo "Total RAM: $(sysctl -n hw.memsize | awk '{print $0/1024/1024/1024 " GB"}')"
+          echo ""
+          echo "=== Disk Info ==="
+          echo "Available disk space: $(df -h / | awk 'NR==2 {print $4}')"
+          echo "Total disk size: $(df -h / | awk 'NR==2 {print $2}')"
+          echo ""
+          echo "=== OS Info ==="
+          echo "macOS version: $(sw_vers -productVersion)"
+          echo "Xcode version: $(xcodebuild -version | head -1)"
+          echo ""
+          echo "=== Architecture ==="
+          echo "Arch: $(uname -m)"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get CMake 3.31.12
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 3.31.12
+
+      - name: Install dependencies
+        run: |
+          brew install ninja lld
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Clone LLVM source code
+        run: |
+          git clone --depth 1 --branch release/22.x \
+            https://github.com/llvm/llvm-project.git
+
+      - name: Configure CMake for iOS arm64
+        run: |
+          export SDKROOT=$(xcrun --sdk iphoneos --show-sdk-path)
+          mkdir -p build/ios-arm64
+          cd build/ios-arm64
+          brew unlink zstd
+          cmake -G Ninja ${{ github.workspace }}/llvm-project/llvm \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=$SDKROOT \
+            -DCMAKE_OSX_ARCHITECTURES="arm64" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER="clang" \
+            -DCMAKE_CXX_COMPILER="clang++" \
+            -DCMAKE_INSTALL_PREFIX=$(pwd)/install_dummy \
+            -DCMAKE_SKIP_INSTALL_ALL_DEPENDENCY=ON \
+            -DCMAKE_C_FLAGS="-O3 -mcpu=apple-a13" \
+            -DCMAKE_CXX_FLAGS="-O3 -mcpu=apple-a13" \
+            -DCMAKE_BUNDLE_DESTINATION="bin" \
+            -DCMAKE_POLICY_DEFAULT_CMP0006=OLD \
+            -DCMAKE_MACOSX_BUNDLE=OFF \
+            -DCMAKE_DISABLE_FIND_PACKAGE_zstd=ON \
+            -DLLVM_ENABLE_ZSTD=OFF \
+            -DLLVM_BUILD_RUNTIME=On \
+            -DLLVM_INCLUDE_TESTS=Off \
+            -DLLVM_INCLUDE_EXAMPLES=Off \
+            -DLLVM_ENABLE_BACKTRACES=Off \
+            -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld;flang" \
+            -DLLVM_ENABLE_RUNTIMES="libc;libcxx;libcxxabi" \
+            -DLLVM_TARGETS_TO_BUILD="AArch64;ARM;X86;RISCV;WebAssembly" \
+            -DLLVM_INSTALL_UTILS=Off \
+            -DLLVM_INSTALL_TOOLCHAIN_ONLY=Off \
+            -DLLVM_ENABLE_INSTALL=Off \
+            -DLLVM_TABLEGEN=$(pwd)/../host/bin/llvm-tblgen \
+            -DCLANG_TABLEGEN=$(pwd)/../host/bin/clang-tblgen \
+            -DMLIR_TABLEGEN_EXE=$(pwd)/../host/bin/mlir-tblgen \
+            -DLLDB_TABLEGEN_EXE=$(pwd)/../host/bin/lldb-tblgen
+
+      - name: Build LLVM libraries
+        run: |
+          cd build/ios-arm64
+          ninja -j $(sysctl -n hw.logicalcpu) llvm-libraries
+          brew link zstd
+
+      - name: Install LLVM libraries to artifacts
+        run: |
+          mkdir -p ${{ github.workspace }}/artifacts/llvm-libraries
+          cd build/ios-arm64
+          cmake --install . --prefix ${{ github.workspace }}/artifacts/llvm-libraries --component llvm-libraries
+
+      - name: Commit and push LLVM libraries
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd ${{ github.workspace }}
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add artifacts/llvm-libraries/
+          git diff --staged --quiet || git commit -m "Update LLVM libraries (iOS arm64, LLVM ${{ env.LLVM_VERSION }})"
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git HEAD:main
