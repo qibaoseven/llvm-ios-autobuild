@@ -55,6 +55,16 @@ jobs:
           git clone --depth 1 --branch release/22.x \
             https://github.com/llvm/llvm-project.git
 
+      - name: Completely remove --gc-sections from LLVM CMake files
+        run: |
+          cd llvm-project/llvm/cmake/modules
+          sed -i '' 's/-Wl,--gc-sections//g' AddLLVM.cmake
+          sed -i '' 's/-Wl,--gc-sections//g' HandleLLVMOptions.cmake
+          sed -i '' '/--gc-sections/d' AddLLVM.cmake
+          sed -i '' '/--gc-sections/d' HandleLLVMOptions.cmake
+          cd ../../../../
+
+
       - name: Configure CMake for iOS arm64
         run: |
           export SDKROOT=$(xcrun --sdk iphoneos --show-sdk-path)
