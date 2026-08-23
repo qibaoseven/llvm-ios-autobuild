@@ -1,10 +1,6 @@
 name: Build Host Tools Only
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
